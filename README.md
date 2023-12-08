@@ -1,5 +1,3 @@
-# Memoire__M1
-
 # Charger le package CASdatasets
 library(CASdatasets)
 library(dplyr)
@@ -12,7 +10,7 @@ data("fremotor1sev0304a")
 #fremotor1prem0304a
 
 # Supprimer les doublonsde la dataframe fremotor1fre0304a:
-duplicated(fremotor1freq0304a)
+#duplicated(fremotor1freq0304a)
 #pas de doublons !
 #fusionner les 3 bases de données
 
@@ -35,8 +33,6 @@ merged_data_2003 <- subset(merged_data_2003, Payment != 0)
 merged_data_2004<- subset(merged_data_2004, Payment != 0)
 
 
-
-
 #on va approcher la loi de fréquence garantie par garantie ! 
 #année 2003 loi de fréquence
 frequence_damage_2003 <- merged_data_2003$Damage
@@ -45,7 +41,6 @@ frequence_other_2003 <- merged_data_2003$Other
 frequence_theft_2003 <- merged_data_2003$Theft
 frequence_TPL_2003 <- merged_data_2003$TPL
 frequence_windscreen_2003 <- merged_data_2003$Windscreen
-
 
 # Ajuster une distribution de Poisson à nos données et estimer les paramètres
 #La fonction fitdistr de R fait partie du package MASS et permet d'ajuster une distribution statistique à des données observées en estimant les paramètres de la distribution. Plus précisément, elle estime les paramètres de la distribution de Poisson qui correspondent le mieux aux données observées dans les donnée
@@ -71,8 +66,362 @@ param_poiss_TPL_2003
 cat("L'estimateur du paramètre de la loi de poisson pour la guarantie windscreen est le suivant : ","\n")
 param_poiss_windscreen_2003
 
+#on teste pour chaque garantie si la loi de fréquence suit une loi de poisson pour l'année 2003
+H0="la loi de fréquence pour la garantie Damage suit une loi de poisson"
+H1="la loi de fréquence pour la garantie Damage ne suit pas une loi de poisson"
+# Compter le nombre de sinistres pour chaque niveau de dommage en 2003
+count_damage_2003 <- table(merged_data_2003$Damage)
 
-#on a donc effectue une estimation du paramètre de la distribution de Poisson pour la lloi de fréquence 2003 pour les données contenues dans la variable frequence à l'aide de la fonction fitdistr.
+# Extraire les niveaux de dommage (0, 1, 2)
+damage_levels <- as.numeric(names(count_damage_2003))
+
+# Convertir le résultat en vecteur
+vec_count_damage_2003 <- as.vector(count_damage_2003)
+
+# Afficher les niveaux de dommage et le vecteur
+print("Niveaux de dommage en 2003:")
+print(damage_levels)
+print("Vecteur du nombre de sinistres par niveau de dommage en 2003:")
+print(vec_count_damage_2003)
+# Créer une data frame avec les niveaux de dommage et le vecteur de compte en 2003
+df_damage_2003 <- data.frame(Damage_Levels = damage_levels, Count = vec_count_damage_2003)
+
+# Afficher la data frame
+print("Data frame pour les sinistres en 2003:")
+print(df_damage_2003)
+x <- with(df_damage_2003, rep(damage_levels,vec_count_damage_2003 ))
+p <- dpois(x, lambda = param_poiss_damage_2003$estimate)
+p <- unique(p)
+data <- cbind(df_damage_2003, p)
+last.x <- max(data[ , 'Damage_Levels' ])
+last.p <- data[data['Damage_Levels'] == last.x, 'p']
+remain.p <- ppois(q = last.x - 1, lambda = param_poiss_damage_2003$estimate, lower.tail = FALSE)
+data[data['Damage_Levels'] == last.x, 'p'] <- remain.p
+data <- data[ , c('Count', 'p')]
+invalid_Np <- with(data, sum(Count) * p)
+invalid_Np <- invalid_Np > 5
+invalid_Np <- sum(invalid_Np = FALSE)
+if(invalid_Np == 0){
+  
+  result <- with(data, chisq.test(Count, p = p)) # Avant correction
+  
+  x2obs <- result[['statistic']] # Après correction
+  df <- result[['parameter']] - 1 # -1 degré de liberté car il y a eu 1 paramètre estimé.
+  p.value <- pchisq(x2obs, df = 5, lower.tail = FALSE)
+  
+} else {
+  cat("Au moins 1 Np n'est pas supérieur à 5")
+}
+
+print(result)
+print(p.value)
+
+if(p.value < 0.05){
+  answer <- paste('Il y a rejet de H0, car', p.value, 'est inférieur à', 0.05, '. Donc,', H1)
+} else {
+  answer <- paste('Il y a non rejet de H0, car', p.value, 'est supérieur à', 0.05, '. Donc,', H0)
+}
+answer
+
+
+#garantie Fire
+
+H0="la loi de fréquence pour la garantie Fire suit une loi de poisson pour l'année 2003"
+H1="la loi de fréquence pour la garantie Fire ne suit pas une loi de poisson pour l'année 2003"
+# Compter le nombre de sinistres pour chaque niveau de dommage en 2003
+count_fire_2003 <- table(merged_data_2003$Fire)
+
+# Extraire les niveaux de dommage (0, 1, 2)
+fire_levels <- as.numeric(names(count_fire_2003))
+
+# Convertir le résultat en vecteur
+vec_count_fire_2003 <- as.vector(count_fire_2003)
+
+# Afficher les niveaux de dommage et le vecteur
+print("Niveaux de fire en 2003:")
+print(fire_levels)
+print("Vecteur du nombre de sinistres par niveau de fire en 2003:")
+print(vec_count_fire_2003)
+# Créer une data frame avec les niveaux de dommage et le vecteur de compte en 2003
+df_fire_2003 <- data.frame(Fire_Levels = fire_levels, Count = vec_count_fire_2003)
+
+# Afficher la data frame
+print("Data frame pour les sinistres en 2003:")
+print(df_fire_2003)
+x <- with(df_fire_2003, rep(fire_levels,vec_count_fire_2003 ))
+p <- dpois(x, lambda = param_poiss_fire_2003$estimate)
+p <- unique(p)
+data <- cbind(df_fire_2003, p)
+last.x <- max(data[ , 'Fire_Levels' ])
+last.p <- data[data['Fire_Levels'] == last.x, 'p']
+remain.p <- ppois(q = last.x - 1, lambda = param_poiss_fire_2003$estimate, lower.tail = FALSE)
+data[data['Fire_Levels'] == last.x, 'p'] <- remain.p
+data <- data[ , c('Count', 'p')]
+invalid_Np <- with(data, sum(Count) * p)
+invalid_Np <- invalid_Np > 5
+invalid_Np <- sum(invalid_Np = FALSE)
+if(invalid_Np == 0){
+  
+  result <- with(data, chisq.test(Count, p = p)) # Avant correction
+  
+  x2obs <- result[['statistic']] # Après correction
+  df <- result[['parameter']] - 1 # -1 degré de liberté car il y a eu 1 paramètre estimé.
+  p.value <- pchisq(x2obs, df = 5, lower.tail = FALSE)
+  
+} else {
+  cat("Au moins 1 Np n'est pas supérieur à 5")
+}
+
+print(result)
+print(p.value)
+
+if(p.value < 0.05){
+  answer <- paste('Il y a rejet de H0, car', p.value, 'est inférieur à', 0.05, '. Donc,', H1)
+} else {
+  answer <- paste('Il y a non rejet de H0, car', p.value, 'est supérieur à', 0.05, '. Donc,', H0)
+}
+answer
+
+
+
+#garantie other pour 2003
+#on teste pour chaque garantie si la loi de fréquence suit une loi de poisson pour l'année 2003
+H0="la loi de fréquence pour la garantie Other suit une loi de poisson"
+H1="la loi de fréquence pour la garantie Other ne suit pas une loi de poisson"
+# Compter le nombre de sinistres pour chaque niveau de dommage en 2003
+count_other_2003 <- table(merged_data_2003$Other)
+
+# Extraire les niveaux de dommage (0, 1, 2)
+other_levels <- as.numeric(names(count_other_2003))
+
+# Convertir le résultat en vecteur
+vec_count_other_2003 <- as.vector(count_other_2003)
+
+# Afficher les niveaux de dommage et le vecteur
+print("Niveaux de dommage en 2003:")
+print(other_levels)
+print("Vecteur du nombre de sinistres par niveau de dommage en 2003:")
+print(vec_count_other_2003)
+# Créer une data frame avec les niveaux de dommage et le vecteur de compte en 2003
+df_other_2003 <- data.frame(Other_Levels = other_levels, Count = vec_count_other_2003)
+
+# Afficher la data frame
+print("Data frame pour les sinistres en 2003:")
+print(df_other_2003)
+x <- with(df_other_2003, rep(other_levels,vec_count_other_2003 ))
+p <- dpois(x, lambda = param_poiss_other_2003$estimate)
+p <- unique(p)
+data <- cbind(df_other_2003, p)
+last.x <- max(data[ , 'Other_Levels' ])
+last.p <- data[data['Other_Levels'] == last.x, 'p']
+remain.p <- ppois(q = last.x - 1, lambda = param_poiss_other_2003$estimate, lower.tail = FALSE)
+data[data['Other_Levels'] == last.x, 'p'] <- remain.p
+data <- data[ , c('Count', 'p')]
+invalid_Np <- with(data, sum(Count) * p)
+invalid_Np <- invalid_Np > 5
+invalid_Np <- sum(invalid_Np = FALSE)
+if(invalid_Np == 0){
+  
+  result <- with(data, chisq.test(Count, p = p)) # Avant correction
+  
+  x2obs <- result[['statistic']] # Après correction
+  df <- result[['parameter']] - 1 # -1 degré de liberté car il y a eu 1 paramètre estimé.
+  p.value <- pchisq(x2obs, df = 5, lower.tail = FALSE)
+  
+} else {
+  cat("Au moins 1 Np n'est pas supérieur à 5")
+}
+
+print(result)
+print(p.value)
+
+if(p.value < 0.05){
+  answer <- paste('Il y a rejet de H0, car', p.value, 'est inférieur à', 0.05, '. Donc,', H1)
+} else {
+  answer <- paste('Il y a non rejet de H0, car', p.value, 'est supérieur à', 0.05, '. Donc,', H0)
+}
+answer
+
+
+#loi de fréquence pour la garantie theft pour l'année 2003
+#on teste pour chaque garantie si la loi de fréquence suit une loi de poisson pour l'année 2003
+H0="la loi de fréquence pour la garantie Theft suit une loi de poisson"
+H1="la loi de fréquence pour la garantie Theft ne suit pas une loi de poisson"
+# Compter le nombre de sinistres pour chaque niveau de dommage en 2003
+count_theft_2003 <- table(merged_data_2003$Theft)
+
+# Extraire les niveaux de dommage (0, 1, 2)
+theft_levels <- as.numeric(names(count_theft_2003))
+
+# Convertir le résultat en vecteur
+vec_count_theft_2003 <- as.vector(count_theft_2003)
+
+# Afficher les niveaux de dommage et le vecteur
+print("Niveaux de dommage en 2003:")
+print(theft_levels)
+print("Vecteur du nombre de sinistres par niveau de dommage en 2003:")
+print(vec_count_theft_2003)
+# Créer une data frame avec les niveaux de dommage et le vecteur de compte en 2003
+df_theft_2003 <- data.frame(Theft_Levels = theft_levels, Count = vec_count_theft_2003)
+
+# Afficher la data frame
+print("Data frame pour les sinistres en 2003:")
+print(df_theft_2003)
+x <- with(df_theft_2003, rep(theft_levels,vec_count_theft_2003 ))
+p <- dpois(x, lambda = param_poiss_theft_2003$estimate)
+p <- unique(p)
+data <- cbind(df_theft_2003, p)
+last.x <- max(data[ , 'Theft_Levels' ])
+last.p <- data[data['Theft_Levels'] == last.x, 'p']
+remain.p <- ppois(q = last.x - 1, lambda = param_poiss_theft_2003$estimate, lower.tail = FALSE)
+data[data['Theft_Levels'] == last.x, 'p'] <- remain.p
+data <- data[ , c('Count', 'p')]
+invalid_Np <- with(data, sum(Count) * p)
+invalid_Np <- invalid_Np > 5
+invalid_Np <- sum(invalid_Np = FALSE)
+if(invalid_Np == 0){
+  
+  result <- with(data, chisq.test(Count, p = p)) # Avant correction
+  
+  x2obs <- result[['statistic']] # Après correction
+  df <- result[['parameter']] - 1 # -1 degré de liberté car il y a eu 1 paramètre estimé.
+  p.value <- pchisq(x2obs, df = 5, lower.tail = FALSE)
+  
+} else {
+  cat("Au moins 1 Np n'est pas supérieur à 5")
+}
+
+print(result)
+print(p.value)
+
+if(p.value < 0.05){
+  answer <- paste('Il y a rejet de H0, car', p.value, 'est inférieur à', 0.05, '. Donc,', H1)
+} else {
+  answer <- paste('Il y a non rejet de H0, car', p.value, 'est supérieur à', 0.05, '. Donc,', H0)
+}
+answer
+
+#GARANTIE TPL
+#on teste pour chaque garantie si la loi de fréquence suit une loi de poisson pour l'année 2003
+H0="la loi de fréquence pour la garantie TPL suit une loi de poisson"
+H1="la loi de fréquence pour la garantie TPL ne suit pas une loi de poisson"
+# Compter le nombre de sinistres pour chaque niveau de dommage en 2003
+count_TPL_2003 <- table(merged_data_2003$TPL)
+
+# Extraire les niveaux de dommage (0, 1, 2)
+TPL_levels <- as.numeric(names(count_TPL_2003))
+
+# Convertir le résultat en vecteur
+vec_count_TPL_2003 <- as.vector(count_TPL_2003)
+
+# Afficher les niveaux de dommage et le vecteur
+print("Niveaux de dommage en 2003:")
+print(TPL_levels)
+print("Vecteur du nombre de sinistres par niveau de dommage en 2003:")
+print(vec_count_TPL_2003)
+# Créer une data frame avec les niveaux de dommage et le vecteur de compte en 2003
+df_TPL_2003 <- data.frame(TPL_Levels = TPL_levels, Count = vec_count_TPL_2003)
+
+# Afficher la data frame
+print("Data frame pour les sinistres en 2003:")
+print(df_TPL_2003)
+x <- with(df_TPL_2003, rep(TPL_levels, vec_count_TPL_2003))
+p <- dpois(x, lambda = param_poiss_TPL_2003$estimate)
+p <- unique(p)
+data <- cbind(df_TPL_2003, p)
+last.x <- max(data[, 'TPL_Levels'])
+last.p <- data[data['TPL_Levels'] == last.x, 'p']
+remain.p <- ppois(q = last.x - 1, lambda = param_poiss_TPL_2003$estimate, lower.tail = FALSE)
+data[data['TPL_Levels'] == last.x, 'p'] <- remain.p
+data <- data[, c('Count', 'p')]
+invalid_Np <- with(data, sum(Count) * p)
+invalid_Np <- invalid_Np > 5
+invalid_Np <- sum(invalid_Np = FALSE)
+if (invalid_Np == 0) {
+  
+  result <- with(data, chisq.test(Count, p = p)) # Avant correction
+  
+  x2obs <- result[['statistic']] # Après correction
+  df <- result[['parameter']] - 1 # -1 degré de liberté car il y a eu 1 paramètre estimé.
+  p.value <- pchisq(x2obs, df = 5, lower.tail = FALSE)
+  
+} else {
+  cat("Au moins 1 Np n'est pas supérieur à 5")
+}
+
+print(result)
+print(p.value)
+
+if (p.value < 0.05) {
+  answer <- paste('Il y a rejet de H0, car', p.value, 'est inférieur à', 0.05, '. Donc,', H1)
+} else {
+  answer <- paste('Il y a non rejet de H0, car', p.value, 'est supérieur à', 0.05, '. Donc,', H0)
+}
+answer
+
+
+#Garantie windscreen
+#on teste pour chaque garantie si la loi de fréquence suit une loi de poisson pour l'année 2003
+H0="la loi de fréquence pour la garantie windscreen suit une loi de poisson"
+H1="la loi de fréquence pour la garantie windscreen ne suit pas une loi de poisson"
+# Compter le nombre de sinistres pour chaque niveau de dommage en 2003
+count_windscreen_2003 <- table(merged_data_2003$Windscreen)
+
+# Extraire les niveaux de dommage (0, 1, 2)
+windscreen_levels <- as.numeric(names(count_windscreen_2003))
+
+# Convertir le résultat en vecteur
+vec_count_windscreen_2003 <- as.vector(count_windscreen_2003)
+
+# Afficher les niveaux de dommage et le vecteur
+print("Niveaux de dommage en 2003:")
+print(windscreen_levels)
+print("Vecteur du nombre de sinistres par niveau de dommage en 2003:")
+print(vec_count_windscreen_2003)
+# Créer une data frame avec les niveaux de dommage et le vecteur de compte en 2003
+df_windscreen_2003 <- data.frame(windscreen_Levels = windscreen_levels, Count = vec_count_windscreen_2003)
+
+# Afficher la data frame
+print("Data frame pour les sinistres en 2003:")
+print(df_windscreen_2003)
+x <- with(df_windscreen_2003, rep(windscreen_levels, vec_count_windscreen_2003))
+p <- dpois(x, lambda = param_poiss_windscreen_2003$estimate)
+p <- unique(p)
+data <- cbind(df_windscreen_2003, p)
+last.x <- max(data[, 'windscreen_Levels'])
+last.p <- data[data['windscreen_Levels'] == last.x, 'p']
+remain.p <- ppois(q = last.x - 1, lambda = param_poiss_windscreen_2003$estimate, lower.tail = FALSE)
+data[data['windscreen_Levels'] == last.x, 'p'] <- remain.p
+data <- data[, c('Count', 'p')]
+invalid_Np <- with(data, sum(Count) * p)
+invalid_Np <- invalid_Np > 5
+invalid_Np <- sum(invalid_Np = FALSE)
+if (invalid_Np == 0) {
+  
+  result <- with(data, chisq.test(Count, p = p)) # Avant correction
+  
+  x2obs <- result[['statistic']] # Après correction
+  df <- result[['parameter']] - 1 # -1 degré de liberté car il y a eu 1 paramètre estimé.
+  p.value <- pchisq(x2obs, df = 5, lower.tail = FALSE)
+  
+} else {
+  cat("Au moins 1 Np n'est pas supérieur à 5")
+}
+
+print(result)
+print(p.value)
+
+if (p.value < 0.05) {
+  answer <- paste('Il y a rejet de H0, car', p.value, 'est inférieur à', 0.05, '. Donc,', H1)
+} else {
+  answer <- paste('Il y a non rejet de H0, car', p.value, 'est supérieur à', 0.05, '. Donc,', H0)
+}
+answer
+
+
+
+
+
 
 
 #année 2004 loi de fréquence
@@ -107,6 +456,18 @@ cat("L'estimateur du paramètre de la loi de Poisson pour la garantie TPL en 200
 param_poiss_TPL_2004
 cat("L'estimateur du paramètre de la loi de Poisson pour la garantie windscreen en 2004 est le suivant : ","\n")
 param_poiss_windscreen_2004
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 library(ggplot2)
@@ -251,4 +612,3 @@ grid3 <- plot_grid(plotlist = ggplot_list, ncol = 3, align = "h", hjust = -0.5)
 
 # Afficher la grille
 grid3
-
